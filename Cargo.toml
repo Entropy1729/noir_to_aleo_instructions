@@ -6,3 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+noirc_frontend = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254_std"] }
+acvm = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254"] }
+noirc_abi = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254"] }
+noirc_driver = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254_std"] }
+noir_field = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254"] }
+noirc_evaluator = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254_std"] }
+fm = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["std"] }
+
+indexmap = "1"
+dirs = "4"
+termcolor = "1"
+hex = "0.4"
+url = "2"
+serde_derive = "1"
+serde = "1"
+toml = "0.5"
