@@ -78,20 +78,3 @@ fn parse_toml_str(toml_as_string: &str) -> Result<Config, String> {
         }
     }
 }
-
-#[test]
-fn parse_standard_toml() {
-    let src = r#"
-
-        [package]
-        authors = ["kev", "foo"]
-        compiler_version = "0.1"
-
-        [dependencies]
-        rand = { tag = "next", git = "https://github.com/rust-lang-nursery/rand"}
-        cool = { tag = "next", git = "https://github.com/rust-lang-nursery/rand"}
-        hello = {path = "./noir_driver"}
-    "#;
-
-    assert!(parse_toml_str(src).is_ok());
-}
