@@ -9,14 +9,12 @@ use not_nargo::into_parsed_program;
 const ALEO_BUILD_DIR: &str = "build/aleo";
 
 fn compile_to_aleo_instructions<P: AsRef<Path>>(program_dir: P) {
-    let (mut noir_program_name, noir_ast) = into_parsed_program(program_dir);
+    let (program_name, noir_ast) = into_parsed_program(program_dir);
+    let compiled_aleo_program = compile_program(&program_name, noir_ast);
+    build_aleo_program(program_name, compiled_aleo_program);
+}
 
-    let mut aleo_path = std::env::current_dir().unwrap();
-    aleo_path.push(ALEO_BUILD_DIR);
-    noir_program_name.push(".aleo");
-    aleo_path.push(noir_program_name.clone());
-    std::fs::create_dir_all(aleo_path.parent().unwrap()).unwrap();
-
+fn compile_program(program_name: &OsString, noir_ast: ParsedModule) -> String {
     let mut aleo_program = String::new();
     let mut register_registry: IndexMap<String, String> = IndexMap::new();
     // This counter is used for intermediate variables.
@@ -34,7 +32,7 @@ fn compile_to_aleo_instructions<P: AsRef<Path>>(program_dir: P) {
     }
     
     println!("{}", aleo_program);
-    // Create program.aleo file
+    // TODO: This functionality should probably be abstracted.
     let mut aleo_file = std::fs::File::create(aleo_path).unwrap();
     std::io::Write::write_all(&mut aleo_file, aleo_program.as_bytes()).unwrap();
 }
@@ -186,6 +184,17 @@ fn to_aleo_operation_line(statement: &Statement, _register_count: &mut u32, regi
         Statement::Semi(_) => todo!(),
         Statement::Error => todo!(),
     }
+}
+
+fn build_aleo_program(mut program_name: OsString, compiled_program: String) {
+    let mut aleo_path = std::env::current_dir().unwrap();
+    aleo_path.push(ALEO_BUILD_DIR);
+    program_name.push(".aleo");
+    aleo_path.push(program_name.clone());
+    std::fs::create_dir_all(aleo_path.parent().unwrap()).unwrap();
+
+    let mut aleo_file = std::fs::File::create(aleo_path).unwrap();
+    std::io::Write::write_all(&mut aleo_file, compiled_program.as_bytes()).unwrap();
 }
 
 // fn to_aleo_operator(operator: &BinaryOpKind) -> &str {
