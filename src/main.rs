@@ -1,42 +1,12 @@
-use std::{path::{PathBuf, Path}, ffi::OsString};
-use acvm::Language;
+use std::path::Path;
 use indexmap::IndexMap;
 use noirc_abi::AbiFEType;
-use noirc_driver::Driver;
-use noirc_frontend::{hir::{def_map::parse_file}, NoirFunction, Pattern::{self, Identifier, Mutable, Tuple, Struct}, UnresolvedType, BlockExpression, Statement, ExpressionKind, ConstrainStatement, Ident, BinaryOpKind, graph::{CrateName, CrateType}};
+use noirc_frontend::{NoirFunction, Pattern::{self, Identifier, Mutable, Tuple, Struct}, UnresolvedType, BlockExpression, Statement, ExpressionKind, ConstrainStatement, Ident, BinaryOpKind};
 
 mod not_nargo;
-use not_nargo::Resolver;
+use not_nargo::into_parsed_program;
 
 const ALEO_BUILD_DIR: &str = "build/aleo";
-
-fn path_to_stdlib() -> PathBuf {
-    dirs::config_dir().unwrap().join("noir-lang").join("std/src")
-}
-
-fn add_std_lib(driver: &mut Driver) {
-    let path_to_std_lib_file = path_to_stdlib().join("lib.nr");
-    let std_crate = driver.create_non_local_crate(path_to_std_lib_file, CrateType::Library);
-    let std_crate_name = "std";
-    driver.propagate_dep(std_crate, &CrateName::new(std_crate_name).unwrap());
-}
-
-fn into_parsed_program<P: AsRef<Path>>(program_dir: P) -> (OsString, noirc_frontend::ParsedModule) {
-    let mut driver = Resolver::resolve_root_config(program_dir.as_ref(), &Language::R1CS).unwrap();
-    add_std_lib(&mut driver);
-    driver.build(true);
-
-    let mut errors = vec![];
-    // if driver.context.def_map(LOCAL_CRATE).is_some() {
-    //     return;
-    // }
-    let root_file_id = driver.context.crate_graph[noirc_frontend::graph::LOCAL_CRATE].root_file_id;
-    
-    let binding = PathBuf::from(driver.context.file_manager.as_simple_files().get(root_file_id.as_usize()).unwrap().name().to_string());
-    let file_name = binding.file_name().unwrap().to_os_string();
-
-    (file_name, parse_file(&mut driver.context.file_manager, root_file_id, &mut errors))
-}
 
 fn compile_to_aleo_instructions<P: AsRef<Path>>(program_dir: P) {
     let (mut noir_program_name, noir_ast) = into_parsed_program(program_dir);
