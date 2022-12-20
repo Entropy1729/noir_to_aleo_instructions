@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-noirc_frontend = { path = "../noir_entropy/crates/noirc_frontend", features = ["bn254_std"] }
-acvm = { path = "../noir_entropy/crates/acvm", features = ["bn254"] }
-noirc_abi = { path = "../noir_entropy/crates/noirc_abi", features = ["bn254"] }
-noirc_driver = { path = "../noir_entropy/crates/noirc_driver", features = ["bn254_std"] }
-noir_field = { path = "../noir_entropy/crates/noir_field", features = ["bn254"] }
-noirc_evaluator = { path = "../noir_entropy/crates/noirc_evaluator", features = ["bn254_std"] }
-fm = { path = "../noir_entropy/crates/fm", features = ["std"] }
+noirc_frontend = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254_std"] }
+acvm = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254"] }
+noirc_abi = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254"] }
+noirc_driver = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254_std"] }
+noir_field = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254"] }
+noirc_evaluator = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["bn254_std"] }
+fm = { git = "https://www.github.com/Entropy1729/noir", branch = "fix_compilation", features = ["std"] }
 
 indexmap = "1"
 dirs = "4"
