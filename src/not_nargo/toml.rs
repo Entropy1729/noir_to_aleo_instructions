@@ -59,7 +59,11 @@ pub fn parse<P: AsRef<Path>>(path_to_toml: P) -> Result<Config, CliError> {
         Ok(cfg) => Ok(cfg),
         Err(msg) => {
             let path = path_to_toml.as_ref();
-            Err(CliError::Generic(format!("{}\n Location: {}", msg, path.display())))
+            Err(CliError::Generic(format!(
+                "{}\n Location: {}",
+                msg,
+                path.display()
+            )))
         }
     }
 }

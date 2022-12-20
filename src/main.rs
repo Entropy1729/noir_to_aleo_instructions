@@ -1,7 +1,12 @@
-use std::path::Path;
 use indexmap::IndexMap;
 use noirc_abi::AbiFEType;
-use noirc_frontend::{NoirFunction, Pattern::{self, Identifier, Mutable, Tuple, Struct}, UnresolvedType, BlockExpression, Statement, ExpressionKind, ConstrainStatement, Ident, BinaryOpKind};
+use noirc_frontend::{
+    BinaryOpKind, BlockExpression, ConstrainStatement, ExpressionKind, Ident, NoirFunction,
+    ParsedModule,
+    Pattern::{self, Identifier, Mutable, Struct, Tuple},
+    Statement, UnresolvedType,
+};
+use std::{ffi::OsString, path::Path};
 
 mod not_nargo;
 use not_nargo::into_parsed_program;
@@ -21,33 +26,46 @@ fn compile_program(program_name: &OsString, noir_ast: ParsedModule) -> String {
     // Register counter will be increased every time a new register is created,
     // that should include the case of intermediate register creation.
     let mut register_count = 0;
-    
-    let aleo_program_name = format!("program {};", noir_program_name.to_str().unwrap());
+
+    let aleo_program_name = format!("program {};", program_name.to_str().unwrap());
     aleo_program.push_str(&aleo_program_name);
     push_new_line(&mut aleo_program);
     push_new_line(&mut aleo_program);
 
     for function in noir_ast.functions {
-        compile_function(&function, &mut aleo_program, &mut register_count, &mut register_registry);
+        compile_function(
+            &function,
+            &mut aleo_program,
+            &mut register_count,
+            &mut register_registry,
+        );
     }
-    
-    println!("{}", aleo_program);
-    // TODO: This functionality should probably be abstracted.
-    let mut aleo_file = std::fs::File::create(aleo_path).unwrap();
-    std::io::Write::write_all(&mut aleo_file, aleo_program.as_bytes()).unwrap();
+
+    aleo_program
 }
 
 fn push_new_line(aleo_program: &mut String) {
     aleo_program.push('\n');
 }
 
-fn compile_function(function: &NoirFunction, aleo_program: &mut String, register_count: &mut u32, register_registry: &mut IndexMap<String, String>) {
-    let function_definition = to_aleo_function_definition(function.name()); 
+fn compile_function(
+    function: &NoirFunction,
+    aleo_program: &mut String,
+    register_count: &mut u32,
+    register_registry: &mut IndexMap<String, String>,
+) {
+    let function_definition = to_aleo_function_definition(function.name());
     aleo_program.push_str(&function_definition);
     push_new_line(aleo_program);
     /* Inputs */
     for (parameter, unresolved_type, visibility) in function.parameters() {
-        let input_line = to_aleo_input_line(parameter, unresolved_type, *visibility, register_count, register_registry);
+        let input_line = to_aleo_input_line(
+            parameter,
+            unresolved_type,
+            *visibility,
+            register_count,
+            register_registry,
+        );
         aleo_program.push_str(&input_line);
     }
     /* Body (a.k.a. operations) */
@@ -56,7 +74,7 @@ fn compile_function(function: &NoirFunction, aleo_program: &mut String, register
     for statement in body {
         let statement_line = to_aleo_operation_line(statement, register_count, register_registry);
         aleo_program.push_str(&statement_line);
-    };
+    }
     /* Outputs */
     // println!("Function def return type:\n{:?}", function.def().return_type);
     // println!("Function def visibility:\n{:?}", function.def().return_visibility);
@@ -67,7 +85,13 @@ fn to_aleo_function_definition(function_name: &str) -> String {
     format!("function {}:", function_name)
 }
 
-fn to_aleo_input_line(parameter: &Pattern, unresolved_type: &UnresolvedType, visibility: AbiFEType, register_count: &mut u32, register_registry: &mut IndexMap<String, String>) -> String {
+fn to_aleo_input_line(
+    parameter: &Pattern,
+    unresolved_type: &UnresolvedType,
+    visibility: AbiFEType,
+    register_count: &mut u32,
+    register_registry: &mut IndexMap<String, String>,
+) -> String {
     match parameter {
         Identifier(Ident(ident)) => {
             let register = to_aleo_register(*register_count);
@@ -78,7 +102,7 @@ fn to_aleo_input_line(parameter: &Pattern, unresolved_type: &UnresolvedType, vis
             *register_count += 1;
 
             format!("\tinput {register} as {register_type}.{visibility};\n")
-        },
+        }
         Mutable(_, _) => todo!(),
         Tuple(_, _) => todo!(),
         Struct(_, _, _) => todo!(),
@@ -93,11 +117,9 @@ fn to_aleo_type(unresolved_type: &UnresolvedType) -> String {
     match unresolved_type {
         UnresolvedType::FieldElement(_) => "field".to_owned(),
         UnresolvedType::Array(_, _) => todo!(),
-        UnresolvedType::Integer(_, signedness, num_bits) => {
-            match signedness {
-                noirc_frontend::Signedness::Signed => format!("i{}", num_bits),
-                noirc_frontend::Signedness::Unsigned => format!("u{}", num_bits),
-            }
+        UnresolvedType::Integer(_, signedness, num_bits) => match signedness {
+            noirc_frontend::Signedness::Signed => format!("i{}", num_bits),
+            noirc_frontend::Signedness::Unsigned => format!("u{}", num_bits),
         },
         UnresolvedType::Bool(_) => todo!(),
         UnresolvedType::Unit => todo!(),
@@ -113,10 +135,14 @@ fn to_aleo_visibility(visibility: AbiFEType) -> String {
         AbiFEType::Public => "public".to_owned(),
         AbiFEType::Private => "private".to_owned(),
     }
-} 
+}
 
 // TODO: register_count will be useful for intermediate variables.
-fn to_aleo_operation_line(statement: &Statement, _register_count: &mut u32, register_registry: &mut IndexMap<String, String>) -> String {
+fn to_aleo_operation_line(
+    statement: &Statement,
+    _register_count: &mut u32,
+    register_registry: &mut IndexMap<String, String>,
+) -> String {
     match statement {
         Statement::Let(_) => todo!(),
         Statement::Constrain(ConstrainStatement(expression)) => {
@@ -141,7 +167,7 @@ fn to_aleo_operation_line(statement: &Statement, _register_count: &mut u32, regi
                             let _path_kind = path.kind;
                             let Ident(ident) = path.segments.first().unwrap();
                             register_registry.get(&ident.contents).unwrap().clone()
-                        },
+                        }
                         ExpressionKind::Tuple(_) => todo!(),
                         ExpressionKind::Error => todo!(),
                     };
@@ -175,10 +201,10 @@ fn to_aleo_operation_line(statement: &Statement, _register_count: &mut u32, regi
                         _ => todo!(),
                     };
                     format!("\t{operator} {left} {right};\n")
-                },
+                }
                 _ => todo!(),
             }
-        },
+        }
         Statement::Expression(_) => todo!(),
         Statement::Assign(_) => todo!(),
         Statement::Semi(_) => todo!(),

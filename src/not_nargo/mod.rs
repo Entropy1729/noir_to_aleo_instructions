@@ -18,19 +18,21 @@ fn nargo_crates() -> std::path::PathBuf {
 /// for the Nargo.toml file there
 /// However, it should only do this after checking the current path
 /// This allows the use of workspace settings in the future.
-fn find_package_config(current_path: &std::path::Path) -> Result<std::path::PathBuf, errors::CliError> {
+fn find_package_config(
+    current_path: &std::path::Path,
+) -> Result<std::path::PathBuf, errors::CliError> {
     match fm::find_file(current_path, "Nargo", "toml") {
         Some(p) => Ok(p),
-        None => {
-            Err(errors::CliError::Generic(format!(
-                    "cannot find a Nargo.toml in {}",
-                    current_path.display()
-                )))
-        }
+        None => Err(errors::CliError::Generic(format!(
+            "cannot find a Nargo.toml in {}",
+            current_path.display()
+        ))),
     }
 }
 
-fn lib_or_bin(current_path: &std::path::Path) -> Result<(std::path::PathBuf, CrateType), errors::CliError> {
+fn lib_or_bin(
+    current_path: &std::path::Path,
+) -> Result<(std::path::PathBuf, CrateType), errors::CliError> {
     // A library has a lib.nr and a binary has a main.nr
     // You cannot have both.
     let src_path = match fm::find_dir(current_path, "src") {
@@ -57,18 +59,27 @@ fn lib_or_bin(current_path: &std::path::Path) -> Result<(std::path::PathBuf, Cra
 }
 
 fn path_to_stdlib() -> std::path::PathBuf {
-    dirs::config_dir().unwrap().join("noir-lang").join("std/src")
+    dirs::config_dir()
+        .unwrap()
+        .join("noir-lang")
+        .join("std/src")
 }
 
 fn add_std_lib(driver: &mut noirc_driver::Driver) {
     let path_to_std_lib_file = path_to_stdlib().join("lib.nr");
     let std_crate = driver.create_non_local_crate(path_to_std_lib_file, CrateType::Library);
     let std_crate_name = "std";
-    driver.propagate_dep(std_crate, &noirc_frontend::graph::CrateName::new(std_crate_name).unwrap());
+    driver.propagate_dep(
+        std_crate,
+        &noirc_frontend::graph::CrateName::new(std_crate_name).unwrap(),
+    );
 }
 
-pub fn into_parsed_program<P: AsRef<std::path::Path>>(program_dir: P) -> (std::ffi::OsString, noirc_frontend::ParsedModule) {
-    let mut driver = Resolver::resolve_root_config(program_dir.as_ref(), &acvm::Language::R1CS).unwrap();
+pub fn into_parsed_program<P: AsRef<std::path::Path>>(
+    program_dir: P,
+) -> (std::ffi::OsString, noirc_frontend::ParsedModule) {
+    let mut driver =
+        Resolver::resolve_root_config(program_dir.as_ref(), &acvm::Language::R1CS).unwrap();
     add_std_lib(&mut driver);
     driver.build(true);
 
@@ -77,9 +88,25 @@ pub fn into_parsed_program<P: AsRef<std::path::Path>>(program_dir: P) -> (std::f
     //     return;
     // }
     let root_file_id = driver.context.crate_graph[noirc_frontend::graph::LOCAL_CRATE].root_file_id;
-    
-    let binding = std::path::PathBuf::from(driver.context.file_manager.as_simple_files().get(root_file_id.as_usize()).unwrap().name().to_string());
+
+    let binding = std::path::PathBuf::from(
+        driver
+            .context
+            .file_manager
+            .as_simple_files()
+            .get(root_file_id.as_usize())
+            .unwrap()
+            .name()
+            .to_string(),
+    );
     let file_name = binding.file_name().unwrap().to_os_string();
 
-    (file_name, noirc_frontend::hir::def_map::parse_file(&mut driver.context.file_manager, root_file_id, &mut errors))
+    (
+        file_name,
+        noirc_frontend::hir::def_map::parse_file(
+            &mut driver.context.file_manager,
+            root_file_id,
+            &mut errors,
+        ),
+    )
 }

@@ -1,14 +1,17 @@
-use crate::not_nargo::{lib_or_bin, find_package_config};
+use crate::not_nargo::{find_package_config, lib_or_bin};
 
-use super::{errors::CliError, toml::{Config, Dependency, self}, git};
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
+use super::{
+    errors::CliError,
+    git,
+    toml::{self, Config, Dependency},
 };
 use acvm::Language;
 use noirc_driver::Driver;
 use noirc_frontend::graph::{CrateId, CrateType};
-
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 /// Creates a unique folder name for a GitHub repo
 /// by using it's URL and tag
@@ -40,7 +43,10 @@ pub struct Resolver<'a> {
 
 impl<'a> Resolver<'a> {
     fn with_driver(driver: &mut Driver) -> Resolver {
-        Resolver { cached_packages: HashMap::new(), driver }
+        Resolver {
+            cached_packages: HashMap::new(),
+            driver,
+        }
     }
 
     /// Returns the Driver and the backend to use
@@ -116,7 +122,12 @@ impl<'a> Resolver<'a> {
             let (entry_path, crate_type) = lib_or_bin(dir_path)?;
             let cfg_path = find_package_config(dir_path)?;
             let cfg = toml::parse(cfg_path)?;
-            Ok(CachedDep { entry_path, crate_type, cfg, remote })
+            Ok(CachedDep {
+                entry_path,
+                crate_type,
+                cfg,
+                remote,
+            })
         }
 
         match dep {
