@@ -235,26 +235,26 @@ fn build_aleo_program(mut program_name: OsString, compiled_program: String) {
     std::io::Write::write_all(&mut aleo_file, compiled_program.as_bytes()).unwrap();
 }
 
-// fn to_aleo_operator(operator: &BinaryOpKind) -> &str {
-//     match operator {
-//         BinaryOpKind::Add => "add",
-//         BinaryOpKind::Subtract => "sub",
-//         BinaryOpKind::Multiply => "mul",
-//         BinaryOpKind::Divide => "div",
-//         BinaryOpKind::Equal => "is.eq",
-//         BinaryOpKind::NotEqual => "is.neq",
-//         BinaryOpKind::Less => "lt",
-//         BinaryOpKind::LessEqual => "lte",
-//         BinaryOpKind::Greater => "gt",
-//         BinaryOpKind::GreaterEqual => "gte",
-//         BinaryOpKind::And => "and",
-//         BinaryOpKind::Or => "or",
-//         BinaryOpKind::Xor => "xor",
-//         BinaryOpKind::ShiftRight => "shr",
-//         BinaryOpKind::ShiftLeft => "shl",
-//         BinaryOpKind::Modulo => "mod",
-//     }
-// }
+fn to_aleo_operator(operator: &BinaryOpKind) -> &str {
+    match operator {
+        BinaryOpKind::Add => "add",
+        BinaryOpKind::Subtract => "sub",
+        BinaryOpKind::Multiply => "mul",
+        BinaryOpKind::Divide => "div",
+        BinaryOpKind::Equal => "is.eq",
+        BinaryOpKind::NotEqual => "is.neq",
+        BinaryOpKind::Less => "lt",
+        BinaryOpKind::LessEqual => "lte",
+        BinaryOpKind::Greater => "gt",
+        BinaryOpKind::GreaterEqual => "gte",
+        BinaryOpKind::And => "and",
+        BinaryOpKind::Or => "or",
+        BinaryOpKind::Xor => "xor",
+        BinaryOpKind::ShiftRight => "shr",
+        BinaryOpKind::ShiftLeft => "shl",
+        BinaryOpKind::Modulo => "mod",
+    }
+}
 
 // TODO: Make a CLI app.
 fn main() {}
