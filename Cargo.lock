@@ -415,7 +415,7 @@ name = "fm"
 version = "0.1.0"
 source = "git+https://www.github.com/Entropy1729/noir?branch=fix_compilation#0fc4f0b4143bc3c174015d9936d55990d9268c01"
 dependencies = [
- "cfg-if 0.1.10",
+ "cfg-if 1.0.0",
  "codespan-reporting",
 ]
 
