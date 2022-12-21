@@ -84,7 +84,7 @@ fn to_aleo_input_line(
     unresolved_type: &UnresolvedType,
     visibility: AbiFEType,
     register_count: &mut u32,
-    register_registry: &mut IndexMap<String, String>,
+    register_registry: &mut IndexMap<Option<String>, String>,
 ) -> String {
     match parameter {
         Identifier(Ident(ident)) => {
@@ -92,7 +92,7 @@ fn to_aleo_input_line(
             let register_type = to_aleo_type(unresolved_type);
             let visibility = to_aleo_visibility(visibility);
 
-            register_registry.insert(ident.contents.clone(), register.clone());
+            register_registry.insert(Some(ident.contents.clone()), register.clone());
             *register_count += 1;
 
             format!("\tinput {register} as {register_type}.{visibility};\n")
@@ -134,75 +134,93 @@ fn to_aleo_visibility(visibility: AbiFEType) -> String {
 // TODO: register_count will be useful for intermediate variables.
 fn to_aleo_operation_line(
     statement: &Statement,
-    _register_count: &mut u32,
-    register_registry: &mut IndexMap<String, String>,
+    register_count: &mut u32,
+    register_registry: &mut IndexMap<Option<String>, String>,
 ) -> String {
     match statement {
         Statement::Let(_) => todo!(),
         Statement::Constrain(ConstrainStatement(expression)) => {
+            // It is tempting to abstract this using handle_expression, but it
+            // should be noticed that the constrain statement expression is not
+            // a regular expression.
             match &expression.kind {
                 ExpressionKind::Infix(infix_expression) => {
-                    let left = match &infix_expression.lhs.kind {
-                        ExpressionKind::Ident(_) => todo!(),
-                        ExpressionKind::Literal(_) => todo!(),
-                        ExpressionKind::Block(_) => todo!(),
-                        ExpressionKind::Prefix(_) => todo!(),
-                        ExpressionKind::Index(_) => todo!(),
-                        ExpressionKind::Call(_) => todo!(),
-                        ExpressionKind::MethodCall(_) => todo!(),
-                        ExpressionKind::Constructor(_) => todo!(),
-                        ExpressionKind::MemberAccess(_) => todo!(),
-                        ExpressionKind::Cast(_) => todo!(),
-                        ExpressionKind::Infix(_) => todo!(),
-                        ExpressionKind::For(_) => todo!(),
-                        ExpressionKind::If(_) => todo!(),
-                        ExpressionKind::Path(path) => {
-                            // Probably important later.
-                            let _path_kind = path.kind;
-                            let Ident(ident) = path.segments.first().unwrap();
-                            register_registry.get(&ident.contents).unwrap().clone()
-                        }
-                        ExpressionKind::Tuple(_) => todo!(),
-                        ExpressionKind::Error => todo!(),
-                    };
-                    let right = match &infix_expression.rhs.kind {
-                        ExpressionKind::Ident(_) => todo!(),
-                        ExpressionKind::Literal(_) => todo!(),
-                        ExpressionKind::Block(_) => todo!(),
-                        ExpressionKind::Prefix(_) => todo!(),
-                        ExpressionKind::Index(_) => todo!(),
-                        ExpressionKind::Call(_) => todo!(),
-                        ExpressionKind::MethodCall(_) => todo!(),
-                        ExpressionKind::Constructor(_) => todo!(),
-                        ExpressionKind::MemberAccess(_) => todo!(),
-                        ExpressionKind::Cast(_) => todo!(),
-                        ExpressionKind::Infix(_) => todo!(),
-                        ExpressionKind::For(_) => todo!(),
-                        ExpressionKind::If(_) => todo!(),
-                        ExpressionKind::Path(path) => {
-                            // Probably important later.
-                            let _path_kind = path.kind;
-                            let Ident(ident) = path.segments.first().unwrap();
-                            register_registry.get(&ident.contents).unwrap().clone()
-                        },
-                        ExpressionKind::Tuple(_) => todo!(),
-                        ExpressionKind::Error => todo!(),
-                    };
+                    let left_operand = handle_expression(
+                        &infix_expression.lhs.kind,
+                        register_count,
+                        register_registry,
+                    );
+                    let right_operand = handle_expression(
+                        &infix_expression.rhs.kind,
+                        register_count,
+                        register_registry,
+                    );
                     // TODO: Abstract this into a function
                     let operator = match &infix_expression.operator.contents {
                         BinaryOpKind::Equal => "assert.eq",
                         BinaryOpKind::NotEqual => "assert.neq",
                         _ => todo!(),
                     };
-                    format!("\t{operator} {left} {right};\n")
+                    format!("\t{operator} {left_operand} {right_operand};\n")
                 }
                 _ => todo!(),
             }
         }
-        Statement::Expression(_) => todo!(),
+        Statement::Expression(expression) => {
+            handle_expression(&expression.kind, register_count, register_registry)
+        }
         Statement::Assign(_) => todo!(),
         Statement::Semi(_) => todo!(),
         Statement::Error => todo!(),
+    }
+}
+
+fn handle_expression(
+    expression: &ExpressionKind,
+    register_count: &mut u32,
+    register_registry: &mut IndexMap<Option<String>, String>,
+) -> String {
+    match &expression {
+        ExpressionKind::Ident(_) => todo!(),
+        ExpressionKind::Literal(_) => todo!(),
+        ExpressionKind::Block(_) => todo!(),
+        ExpressionKind::Prefix(_) => todo!(),
+        ExpressionKind::Index(_) => todo!(),
+        ExpressionKind::Call(_) => todo!(),
+        ExpressionKind::MethodCall(_) => todo!(),
+        ExpressionKind::Constructor(_) => todo!(),
+        ExpressionKind::MemberAccess(_) => todo!(),
+        ExpressionKind::Cast(_) => todo!(),
+        ExpressionKind::Infix(infix_expression) => {
+            let left_operand: String = handle_expression(
+                &infix_expression.lhs.kind,
+                register_count,
+                register_registry,
+            );
+            let right_operand: String = handle_expression(
+                &infix_expression.rhs.kind,
+                register_count,
+                register_registry,
+            );
+            let operator = to_aleo_operator(&infix_expression.operator.contents);
+            let destination_register = to_aleo_register(*register_count);
+            register_registry.insert(None, destination_register.clone());
+            *register_count += 1;
+            format!("\t{operator} {left_operand} {right_operand} into {destination_register};\n")
+        }
+        ExpressionKind::For(_) => todo!(),
+        ExpressionKind::If(_) => todo!(),
+        ExpressionKind::Path(path) => {
+            // Probably important later.
+            let _path_kind = path.kind;
+            let Ident(ident) = path.segments.first().unwrap();
+            register_registry
+                .get(&Some(ident.contents.clone()))
+                .unwrap()
+                .clone()
+        }
+        ExpressionKind::Tuple(_) => todo!(),
+        ExpressionKind::Error => todo!(),
     }
 }
 
@@ -243,7 +261,7 @@ fn main() {}
 
 #[cfg(test)]
 mod tests {
-    use crate::compile_to_aleo_instructions;
+    use crate::{compile_program, compile_to_aleo_instructions, not_nargo::into_parsed_program};
 
     const TEST_DATA_DIR: &str = "tests/";
 
