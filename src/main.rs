@@ -66,10 +66,13 @@ fn compile_function(function: &NoirFunction, aleo_program: &mut String) {
             to_aleo_operation_line(&statement, &mut register_count, &mut register_registry);
         aleo_program.push_str(&statement_line);
     }
-    /* Outputs */
-    // println!("Function def return type:\n{:?}", function.def().return_type);
-    // println!("Function def visibility:\n{:?}", function.def().return_visibility);
-    // println!("Function return type:\n{}", function.return_type());
+    let output_type = to_aleo_type(&function_def.return_type);
+    let output_visibility = to_aleo_visibility(function_def.return_visibility);
+    let (_, output_register) = register_registry.last().unwrap();
+    aleo_program.push_str(&format!(
+        "\toutput {} as {}.{};\n",
+        output_register, output_type, output_visibility
+    ));
 }
 
 fn to_aleo_function_definition(function_name: &str) -> String {
