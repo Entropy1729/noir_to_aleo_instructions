@@ -21,24 +21,13 @@ fn compile_to_aleo_instructions<P: AsRef<Path>>(program_dir: P) {
 
 fn compile_program(program_name: &OsString, noir_ast: ParsedModule) -> String {
     let mut aleo_program = String::new();
-    let mut register_registry: IndexMap<String, String> = IndexMap::new();
-    // This counter is used for intermediate variables.
-    // Register counter will be increased every time a new register is created,
-    // that should include the case of intermediate register creation.
-    let mut register_count = 0;
-
-    let aleo_program_name = format!("program {};", program_name.to_str().unwrap());
+    let aleo_program_name = format!("program {}.aleo;", program_name.to_str().unwrap());
     aleo_program.push_str(&aleo_program_name);
     push_new_line(&mut aleo_program);
     push_new_line(&mut aleo_program);
 
     for function in noir_ast.functions {
-        compile_function(
-            &function,
-            &mut aleo_program,
-            &mut register_count,
-            &mut register_registry,
-        );
+        compile_function(&function, &mut aleo_program);
     }
 
     aleo_program
@@ -48,12 +37,12 @@ fn push_new_line(aleo_program: &mut String) {
     aleo_program.push('\n');
 }
 
-fn compile_function(
-    function: &NoirFunction,
-    aleo_program: &mut String,
-    register_count: &mut u32,
-    register_registry: &mut IndexMap<String, String>,
-) {
+fn compile_function(function: &NoirFunction, aleo_program: &mut String) {
+    let mut register_registry: IndexMap<Option<String>, String> = IndexMap::new();
+    // This counter is used for intermediate variables.
+    // Register counter will be increased every time a new register is created,
+    // that should include the case of intermediate register creation.
+    let mut register_count = 0_u32;
     let function_definition = to_aleo_function_definition(function.name());
     aleo_program.push_str(&function_definition);
     push_new_line(aleo_program);
@@ -63,16 +52,18 @@ fn compile_function(
             parameter,
             unresolved_type,
             *visibility,
-            register_count,
-            register_registry,
+            &mut register_count,
+            &mut register_registry,
         );
         aleo_program.push_str(&input_line);
     }
     /* Body (a.k.a. operations) */
     let function_def = function.def();
-    let BlockExpression(body) = &function_def.body;
-    for statement in body {
-        let statement_line = to_aleo_operation_line(statement, register_count, register_registry);
+    let BlockExpression(mut body) = function_def.body.clone();
+    body.reverse();
+    while let Some(statement) = body.pop() {
+        let statement_line =
+            to_aleo_operation_line(&statement, &mut register_count, &mut register_registry);
         aleo_program.push_str(&statement_line);
     }
     /* Outputs */
