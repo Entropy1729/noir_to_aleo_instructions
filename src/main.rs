@@ -259,4 +259,16 @@ mod tests {
         program_dir.push(&format!("{TEST_DATA_DIR}/hello_world_noir_crate"));
         compile_to_aleo_instructions(program_dir);
     }
+
+    #[test]
+    fn test_add() {
+        let mut program_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        program_dir.push(&format!("{TEST_DATA_DIR}/add"));
+        let (program_name, noir_ast) = into_parsed_program(program_dir);
+        let expected_compiled_program = "program main.nr.aleo;\n\nfunction add:\n\tinput r0 as u32.private;\n\tinput r1 as u32.private;\n\tadd r0 r1 into r2;\n\toutput r2 as u32.private;\n";
+
+        let compiled_program = compile_program(&program_name, noir_ast);
+
+        assert_eq!(compiled_program, expected_compiled_program);
+    }
 }
